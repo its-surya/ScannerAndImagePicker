@@ -9,8 +9,13 @@ import {
   StatusBar,
   Button,
   Linking,
+  Video,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
+
+let FileViewer, openFile;
+FileViewer = require('react-native-file-viewer').default;
+
 const App = () => {
   const [fileResponse, setFileResponse] = useState([]);
 
@@ -25,9 +30,17 @@ const App = () => {
     }
   }, []);
 
-  const handleOpenFile = file => {
-    if (file?.uri) {
-      Linking.openURL(file.uri);
+  const handleOpenFile = async file => {
+    try {
+      if (Platform.OS === 'android' && FileViewer) {
+        await FileViewer.open(file.uri, {
+          showOpenWithDialog: true,
+        });
+      } else if (Platform.OS === 'ios' && openFile) {
+        await openFile({url: file.uri});
+      }
+    } catch (error) {
+      console.warn(error);
     }
   };
 
@@ -42,6 +55,21 @@ const App = () => {
             source={{uri: file?.uri}}
             style={styles.image}
             resizeMode="cover"
+          />
+          <Text style={styles.documentText}>{file.name}</Text>
+        </TouchableOpacity>
+      );
+    } else if (file.type && file.type.startsWith('VID/')) {
+      return (
+        <TouchableOpacity
+          key={index.toString()}
+          style={styles.videoContainer}
+          onPress={() => handleOpenFile(file)}>
+          <Video
+            source={{uri: file.uri}}
+            style={styles.video}
+            resizeMode="cover"
+            controls={true}
           />
           <Text style={styles.documentText}>{file.name}</Text>
         </TouchableOpacity>
